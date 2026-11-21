@@ -11,6 +11,7 @@
 ### Added
 - `.claude/launch.json`: a copy of the `todo-app` preview server config from the parent folder's `.claude/launch.json`, so the desktop app's browser pane can start the server when the session opens in `todo-app/`. It points to `serve.ps1` in an old session scratchpad, which may get cleared later.
 
+- `styles.css`: the heading colour changed from brick red to green at the user's request. `--heading` is now `#2e7d32` in light mode and `#5fbf7a` in dark mode. This change comes after the first push and isn't on GitHub yet.
 - Git: the project is now a git repository on branch `main`, pushed to https://github.com/tanclangela-ui/todo20261121 at the user's request. The commit author (name and email) is set in this repository only, not globally.
 - `.gitignore`: added. It excludes `.claude/`, which only holds the machine-specific launch config pointing to a temporary folder.
 
