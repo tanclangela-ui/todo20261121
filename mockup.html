@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>To-Do Tracker – Phone Mockup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; padding: 40px 16px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px;
+      font-family: "Inter", system-ui, sans-serif;
+      background: radial-gradient(circle at 30% 20%, #3b3b8f 0%, #1a1a3a 45%, #0d0d1c 100%);
+      color: #fff;
+    }
+
+    /* Galaxy S25 viewport is 360 x 780 CSS px; the frame adds a thin bezel around it */
+    .phone {
+      position: relative; width: 380px; height: 800px; padding: 10px;
+      border-radius: 54px;
+      background: linear-gradient(145deg, #4a4d57, #22242a 40%, #3a3c44);
+      box-shadow: 0 0 0 2px #5c5f69, 0 40px 80px rgba(0, 0, 0, 0.55), inset 0 0 0 2px #15161a;
+    }
+    .side-btn { position: absolute; right: -4px; width: 4px; background: #3a3c44; border-radius: 0 3px 3px 0; }
+    .volume { top: 150px; height: 90px; }
+    .power { top: 270px; height: 56px; }
+
+    .screen {
+      position: relative; width: 360px; height: 780px; overflow: hidden;
+      border-radius: 44px; background: #f4f5fb;
+      display: flex; flex-direction: column;
+    }
+    .status-bar {
+      height: 34px; flex-shrink: 0; padding: 0 26px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 13px; font-weight: 600; color: #1c1d29; background: #f4f5fb;
+    }
+    .camera {
+      position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+      width: 13px; height: 13px; border-radius: 50%; background: #0b0b0e;
+      box-shadow: inset 0 0 0 2px #1d1e24; z-index: 2;
+    }
+    .status-icons { display: flex; align-items: center; gap: 5px; }
+    .status-icons svg { display: block; }
+
+    iframe { flex: 1; width: 100%; border: 0; display: block; background: #f4f5fb; }
+
+    .nav-bar { height: 22px; flex-shrink: 0; display: grid; place-content: center; background: #f4f5fb; }
+    .nav-pill { width: 110px; height: 4px; border-radius: 99px; background: #1c1d29; opacity: 0.8; }
+
+    .caption { text-align: center; }
+    .caption h1 { margin: 0; font-size: 20px; font-weight: 600; }
+    .caption p { margin: 6px 0 0; font-size: 14px; color: #b9bbe0; }
+
+    @media (prefers-color-scheme: dark) {
+      .screen, .status-bar, .nav-bar, iframe { background: #12131a; }
+      .status-bar { color: #ececf3; }
+      .nav-pill { background: #ececf3; }
+    }
+    @media (max-width: 420px) { .phone { transform: scale(0.85); transform-origin: top center; margin-bottom: -120px; } }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="side-btn volume"></div>
+    <div class="side-btn power"></div>
+    <div class="screen">
+      <div class="camera"></div>
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-icons">
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 11.5 0.5 3.5a10.6 10.6 0 0 1 15 0z"/></svg>
+          <svg width="15" height="12" viewBox="0 0 15 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="4" y="5.5" width="3" height="6.5" rx="1"/><rect x="8" y="3" width="3" height="9" rx="1"/><rect x="12" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="24" height="12" viewBox="0 0 24 12" fill="none" stroke="currentColor"><rect x="0.5" y="0.5" width="20" height="11" rx="3"/><rect x="2.5" y="2.5" width="13" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M22.5 4v4" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+      <iframe src="index.html?demo" title="To-Do Tracker app"></iframe>
+      <div class="nav-bar"><div class="nav-pill"></div></div>
+    </div>
+  </div>
+
+  <div class="caption">
+    <h1>To-Do Tracker on Galaxy S25</h1>
+    <p>Live app at the phone's 360 × 780 screen size: scroll, tap and add tasks inside the screen</p>
+  </div>
+</body>
+</html>
