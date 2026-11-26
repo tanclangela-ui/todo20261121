@@ -1,75 +1,445 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>To-Do Tracker</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <script>
+    // Apply the saved light/dark choice before the page draws, so it doesn't flash.
+    try {
+      const t = localStorage.getItem('theme');
+      if (t) document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+  <style>
+    /* Colour palette (change these to re-theme the whole app) */
+    :root {
+      --bg: #f4f5fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #6366f1;
+      --accent-2: #8b5cf6;
+      --high: #dc2626;    --high-bg: #fee2e2;
+      --medium: #b45309;  --medium-bg: #fef3c7;
+      --low: #047857;     --low-bg: #d1fae5;
+      --info: #2563eb;    --info-bg: #dbeafe;
+      --wait: #9333ea;    --wait-bg: #f3e8ff;
+      --success: #059669; --success-bg: #ecfdf5;
+      --success-btn: #059669; /* same in both themes so white button text stays readable */
+      color-scheme: light;
+    }
+    /* Dark colours: used when the device is in dark mode (unless the user picked light),
+       or when the user picked dark with the toggle. */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f172a; --card: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --border: #334155;
+        --high: #f87171; --high-bg: #451a1a; --medium: #fbbf24; --medium-bg: #422c0b;
+        --low: #34d399; --low-bg: #0b3b2e; --info: #60a5fa; --info-bg: #172554;
+        --wait: #c084fc; --wait-bg: #3b0764; --success: #34d399; --success-bg: #0b3b2e;
+        color-scheme: dark;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0f172a; --card: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --border: #334155;
+      --high: #f87171; --high-bg: #451a1a; --medium: #fbbf24; --medium-bg: #422c0b;
+      --low: #34d399; --low-bg: #0b3b2e; --info: #60a5fa; --info-bg: #172554;
+      --wait: #c084fc; --wait-bg: #3b0764; --success: #34d399; --success-bg: #0b3b2e;
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    html.demo { scrollbar-width: none; }               /* demo mode (mockup.html): no scrollbars */
+    html.demo::-webkit-scrollbar { display: none; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      max-width: 1000px;
+      margin: 0 auto;
+      /* env() keeps content clear of the iPhone notch and home bar */
+      padding: max(32px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+               max(32px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      transition: background 0.3s, color 0.3s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    #theme-toggle {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      font-size: 1.3rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    /* ---------- Add / edit form ---------- */
+    form { display: flex; flex-wrap: wrap; gap: 10px; }
+    input, select, textarea {
+      flex: 1 1 160px;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--text);
+      font: inherit;
+      font-size: 16px; /* 16px stops iPhones zooming in when you tap a field */
+    }
+    textarea { flex: 1 1 100%; min-height: 64px; resize: vertical; }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+    }
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 10px;
+      font: inherit;
+      font-size: 0.95rem;
+      color: var(--text);
+      transition: transform 0.1s, opacity 0.2s, background 0.2s;
+    }
+    button:hover { opacity: 0.9; }
+    button:active { transform: scale(0.95); }
+    button[hidden] { display: none; }
+    .form-buttons { display: flex; gap: 10px; }
+    form button {
+      min-height: 44px;
+      padding: 10px 22px;
+      color: #fff;
+      font-weight: 600;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    }
+    form button.secondary {
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+    }
+
+    /* ---------- Pop-up message (done / deleted + Undo) ---------- */
+    #message {
+      display: none;
+      position: fixed;
+      z-index: 10;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: max(20px, env(safe-area-inset-bottom));
+      width: calc(100% - 32px);
+      max-width: 560px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid var(--success);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      font-weight: 500;
+    }
+    #message.show { display: flex; }
+    #message button {
+      flex-shrink: 0;
+      min-height: 36px;
+      padding: 6px 16px;
+      color: #fff;
+      background: var(--success-btn);
+      font-weight: 600;
+    }
+
+    /* ---------- Counter, sort and filter ---------- */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .counter { display: flex; flex-wrap: wrap; gap: 8px; }
+    .count {
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .count b { color: var(--text); }
+    .count.overdue, .count.overdue b { color: var(--high); background: var(--high-bg); border-color: transparent; }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; }
+    .controls label { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--muted); }
+    .controls select { flex: none; min-height: 38px; padding: 6px 10px; font-size: 0.9rem; background: var(--card); }
+
+    /* ---------- Items table ---------- */
+    .table-wrap { padding: 0; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: rgba(99, 102, 241, 0.05); }
+
+    .item-name { font-weight: 500; }
+    .notes { margin-top: 4px; font-size: 0.85rem; color: var(--muted); white-space: pre-wrap; word-break: break-word; }
+    .meta { margin-top: 4px; font-size: 0.78rem; color: var(--muted); }
+    td.deadline-cell { white-space: nowrap; }
+
+    /* Finished items: struck through and faded */
+    tr.done .item-name { text-decoration: line-through; }
+    tr.done td.title, tr.done td.deadline-cell, tr.done td.req, tr.done .badge { opacity: 0.6; }
+
+    /* Drag handle (only shown when sorting by "My order") */
+    th.handle-cell, td.handle-cell { width: 32px; padding-right: 0; }
+    .handle {
+      display: inline-block;
+      padding: 4px;
+      font-size: 1.2rem;
+      line-height: 1;
+      color: var(--muted);
+      cursor: grab;
+      touch-action: none; /* lets a finger drag without scrolling the page */
+      user-select: none;
+    }
+    .no-drag .handle-cell { display: none; }
+    tr.dragging { background: var(--card); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); }
+    tr.dragging .handle { cursor: grabbing; }
+
+    /* Priority badges */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .badge.high { color: var(--high); background: var(--high-bg); }
+    .badge.medium { color: var(--medium); background: var(--medium-bg); }
+    .badge.low { color: var(--low); background: var(--low-bg); }
+
+    /* Status picker, coloured by status */
+    .status-select {
+      flex: none;
+      min-height: 32px;
+      padding: 4px 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .st-todo { color: var(--muted); background: var(--bg); border-color: var(--border); }
+    .st-progress { color: var(--info); background: var(--info-bg); }
+    .st-waiting { color: var(--wait); background: var(--wait-bg); }
+    .st-done { color: var(--success); background: var(--success-bg); }
+
+    /* Deadline: amber when due today/tomorrow, red when overdue */
+    .due { display: inline-flex; flex-direction: column; line-height: 1.3; }
+    .due small { font-size: 0.75rem; color: var(--muted); }
+    .due.soon, .due.soon small { color: var(--medium); font-weight: 600; }
+    .due.overdue, .due.overdue small { color: var(--high); font-weight: 600; }
+
+    /* Row buttons: Done/Undo, edit, delete */
+    td.actions { white-space: nowrap; text-align: right; }
+    td.actions button {
+      min-width: 36px;
+      min-height: 36px;
+      padding: 6px 10px;
+      margin-left: 4px;
+      background: transparent;
+    }
+    td.actions button.done-btn { color: #fff; background: var(--success-btn); font-weight: 600; }
+    tr.done td.actions button.done-btn { background: var(--muted); }
+    td.actions button:not(.done-btn):hover { background: var(--bg); }
+
+    td.empty { white-space: normal; text-align: center; color: var(--muted); padding: 30px; }
+
+    /* ---------- Backup buttons ---------- */
+    .backup { display: flex; flex-wrap: wrap; gap: 10px; }
+    .backup button {
+      min-height: 44px;
+      padding: 10px 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+    }
+    .hint { margin: 10px 0 90px; font-size: 0.8rem; color: var(--muted); }
+
+    /* ---------- Phones (iPhone / Android) ---------- */
+    @media (max-width: 640px) {
+      body { padding-top: max(20px, env(safe-area-inset-top)); }
+      h1 { font-size: 1.6rem; }
+      .card { padding: 16px; border-radius: 16px; }
+
+      /* Form: one field per line, full-width buttons */
+      input, select, textarea, .form-buttons { flex: 1 1 100%; }
+      .form-buttons button { flex: 1; min-height: 48px; font-size: 1rem; }
+
+      /* Sort / filter take the full width; 16px text avoids iPhone zoom */
+      .controls, .controls label { flex: 1 1 100%; }
+      .controls select { flex: 1; font-size: 16px; min-height: 44px; }
+      .controls label { flex: 1 1 calc(50% - 5px); }
+      .controls { flex-wrap: nowrap; }
+
+      /* List: each item becomes its own card instead of a table row */
+      .table-wrap { padding: 0; background: none; border: none; box-shadow: none; overflow: visible; }
+      table, tbody, tr, td { display: block; width: 100%; }
+      thead { display: none; }
+      tbody tr {
+        position: relative;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+        padding: 14px 16px;
+        margin-bottom: 12px;
+      }
+      tbody tr:hover { background: var(--card); }
+      td {
+        border: none;
+        padding: 5px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+      /* Small grey label in front of each value, from the cell's data-label */
+      td[data-label]::before {
+        content: attr(data-label);
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+      td.title { display: block; font-size: 1.1rem; padding: 0 40px 8px 0; }
+      td.blank { display: none; } /* hide empty deadline / requested-by lines */
+      td.handle-cell { position: absolute; top: 10px; right: 10px; width: auto; padding: 0; }
+      .handle { font-size: 1.4rem; padding: 6px; }
+      .due { align-items: flex-end; text-align: right; }
+      .status-select { font-size: 16px; min-height: 38px; padding: 4px 12px; }
+
+      /* Buttons along the bottom of the card, big enough for a thumb */
+      td.actions {
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 10px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+      }
+      td.actions button { min-width: 44px; min-height: 44px; margin: 0; font-size: 1.1rem; }
+      td.actions button.done-btn { flex: 1; font-size: 1rem; }
+
+      td.empty { display: block; background: var(--card); border-radius: 16px; }
+      .backup button { flex: 1 1 100%; }
+    }
+  </style>
 </head>
 <body>
-  <main class="app">
-    <header class="header">
-      <div>
-        <h1>To-Do Tracker</h1>
-        <p class="subtitle" id="today"></p>
-      </div>
-      <div class="stats">
-        <div class="stat"><span id="statActive">0</span>Active</div>
-        <div class="stat"><span id="statOverdue">0</span>Overdue</div>
-        <div class="stat"><span id="statDone">0</span>Done</div>
-      </div>
-    </header>
+  <header>
+    <h1>To-Do Tracker</h1>
+    <button id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode">🌙</button>
+  </header>
 
-    <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
-
-    <form id="taskForm" class="card form">
-      <div class="form-main">
-        <input id="item" placeholder="What needs to be done?" required autocomplete="off">
-        <button type="button" id="cancelEdit" class="btn ghost" hidden>Cancel</button>
-        <button type="submit" id="submitBtn" class="btn primary">Add task</button>
-      </div>
-      <div class="form-row">
-        <label><span class="label-text">Priority</span>
-          <select id="priority">
-            <option value="High">High</option>
-            <option value="Medium" selected>Medium</option>
-            <option value="Low">Low</option>
-          </select>
-        </label>
-        <label><span class="label-text">Deadline</span>
-          <input id="deadline" type="date">
-        </label>
-        <label><span class="label-text">Requested by</span>
-          <input id="requestedBy" placeholder="Name" autocomplete="off">
-        </label>
+  <div class="card">
+    <form id="item-form">
+      <input id="item" placeholder="What needs doing?" required autocomplete="off">
+      <select id="priority" aria-label="Priority">
+        <option>High</option>
+        <option selected>Medium</option>
+        <option>Low</option>
+      </select>
+      <input id="deadline" type="date" aria-label="Deadline">
+      <input id="requested-by" placeholder="Requested by" list="requesters" autocomplete="off">
+      <datalist id="requesters"></datalist>
+      <select id="repeat" aria-label="Repeat">
+        <option value="">Doesn't repeat</option>
+        <option value="daily">Repeats daily</option>
+        <option value="weekly">Repeats weekly</option>
+        <option value="monthly">Repeats monthly</option>
+      </select>
+      <textarea id="notes" placeholder="Notes (optional)" rows="2"></textarea>
+      <div class="form-buttons">
+        <button type="submit" id="submit-btn">Add</button>
+        <button type="button" id="cancel-btn" class="secondary" hidden>Cancel</button>
       </div>
     </form>
+  </div>
 
-    <div class="toolbar">
-      <div class="chips" id="filters">
-        <button class="chip active" data-filter="all">All</button>
-        <button class="chip" data-filter="active">Active</button>
-        <button class="chip" data-filter="done">Done</button>
-      </div>
-      <div class="toolbar-right">
-        <input id="search" type="search" placeholder="Search…">
-        <select id="sort">
-          <option value="created">Newest first</option>
+  <div class="toolbar">
+    <div id="counter" class="counter" aria-live="polite"></div>
+    <div class="controls">
+      <label>Sort
+        <select id="sort-by">
+          <option value="manual">My order</option>
           <option value="priority">Priority</option>
           <option value="deadline">Deadline</option>
-          <option value="requestedBy">Requested by</option>
+          <option value="person">Requested by</option>
+          <option value="newest">Newest first</option>
         </select>
-      </div>
+      </label>
+      <label>Show
+        <select id="person-filter"></select>
+      </label>
     </div>
+  </div>
 
-    <ul id="taskList" class="task-list"></ul>
-    <div id="empty" class="empty" hidden>
-      <div class="empty-icon">✓</div>
-      <p>Nothing here. Add a task above to get started.</p>
-    </div>
-  </main>
+  <div class="card table-wrap">
+    <table id="item-table">
+      <thead>
+        <tr>
+          <th class="handle-cell"></th><th>Item</th><th>Priority</th><th>Status</th>
+          <th>Deadline</th><th>Requested by</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="item-list"></tbody>
+    </table>
+  </div>
+
+  <div class="backup">
+    <button id="export-json" type="button">⬇️ Export backup</button>
+    <button id="import-btn" type="button">⬆️ Import backup</button>
+    <button id="export-csv" type="button">📊 Export to Excel (CSV)</button>
+    <input id="import-file" type="file" accept=".json,application/json" hidden>
+  </div>
+  <p class="hint">Your list is saved in this browser only. Export a backup now and then to keep it safe.</p>
+
+  <div id="message" role="status"></div>
 
   <script src="app.js"></script>
 </body>
